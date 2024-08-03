@@ -9,25 +9,42 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(\.modelContext) var modelContext
-    @Query(sort: \User.name) var users: [User]
-    @State private var path = [User]()
+    @State private var searchTerm = ""
+    @Query(
+        filter: #Predicate<User> { user in
+            user.name.localizedStandardContains("R") &&
+            user.city == "Kattegat"
+        },
+        sort: \User.name
+    ) var users: [User]
     
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationStack {
             List(users) { user in
-                NavigationLink(value: user) {
-                    Text(user.name)
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text(user.name)
+                            .font(.headline)
+                        Text(user.city)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text(user.joinDate, format: .dateTime)
+                    
                 }
+                    
             }
-            .navigationTitle("Users")
-            .navigationDestination(for: User.self) { user in
-                EditUserView(user: user)
-            }
+            .navigationTitle("Vikings")
             .toolbar {
-                Button("Add user", systemImage: "plus") {
-                    let user = User(name: "John doe", city: "New York", joinDate: .now)
-                    modelContext.insert(user)
-                    path = [user]
+                Button("Add vikings to boat", systemImage: "plus") {
+                    try? modelContext.delete(model: User.self)
+                   
+                    let names = ["Floki", "Björn", "Ragnar", "Rollo"]
+                    let cities = ["Kattegat", "Wessex", "Paris", "Asgard"]
+                    for _ in 1...4 {
+                        let user = User(name: names.randomElement()!, city: cities.randomElement()!, joinDate: .now.addingTimeInterval(TimeInterval(86400 * Int.random(in: -10...10)) ))
+                        modelContext.insert(user)
+                    }
                 }
             }
         }
