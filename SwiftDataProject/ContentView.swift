@@ -10,32 +10,18 @@ import SwiftUI
 struct ContentView: View {
     @Environment(\.modelContext) var modelContext
     @State private var searchTerm = ""
-    @Query(
-        filter: #Predicate<User> { user in
-            user.name.localizedStandardContains("R") &&
-            user.city == "Kattegat"
-        },
-        sort: \User.name
-    ) var users: [User]
+    @State private var showingUpcommingOnly = false
+    @State private var sortOrder = [
+        SortDescriptor(\User.name),
+        SortDescriptor(\User.joinDate)
+    ]
     
     var body: some View {
         NavigationStack {
-            List(users) { user in
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text(user.name)
-                            .font(.headline)
-                        Text(user.city)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Text(user.joinDate, format: .dateTime)
-                    
-                }
-                    
-            }
+            UsersView(mininumJoinedDate: showingUpcommingOnly ? .now : .distantPast, sortOrder: sortOrder)
             .navigationTitle("Vikings")
             .toolbar {
+                Button(showingUpcommingOnly ? "Show everyone" : "Show upcomming") { showingUpcommingOnly.toggle() }
                 Button("Add vikings to boat", systemImage: "plus") {
                     try? modelContext.delete(model: User.self)
                    
@@ -46,6 +32,21 @@ struct ContentView: View {
                         modelContext.insert(user)
                     }
                 }
+                
+                Menu("Sort", systemImage: "arrow.up.arrow.down") {
+                    Picker("Sort", selection: $sortOrder) {
+                        Text("Sort by Name")
+                            .tag([
+                                SortDescriptor(\User.name),
+                                SortDescriptor(\User.joinDate)
+                            ])
+                        Text("Sort by Join Date")
+                            .tag([
+                                SortDescriptor(\User.joinDate),
+                                SortDescriptor(\User.name)
+                            ])
+                    }
+                }
             }
         }
     }
@@ -53,4 +54,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .modelContainer(for: User.self)
 }
